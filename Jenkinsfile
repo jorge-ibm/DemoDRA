@@ -9,9 +9,11 @@ pipeline {
         // You need to specify 4 required environment variables first, they are going to be used for the following IBM Cloud DevOps steps
         IBM_CLOUD_DEVOPS_API_KEY = credentials('sample-apikey-weather-app')
         IBM_CLOUD_DEVOPS_APP_NAME = 'Weather-App-Demo-Sample'
-        IBM_CLOUD_DEVOPS_CREDS_USR = credentials('sample-username-weather-app')
-        IBM_CLOUD_DEVOPS_CREDS_ORG = credentails('sample-username-weather-app')
 
+    }
+    parameters {
+      string(name: 'username', defaultValue: 'jorge.rangel@ibm.com', description: 'Cloud Foundry username')
+      string(name: 'organization', defaultValue: 'jorge.rangel@ibm.com', description: 'Cloud Foundry organization')
     }
     stages {
       stage('Build') {
@@ -26,13 +28,13 @@ pipeline {
       }
       stage('Deploy to Staging') {
         steps {
-          deployStaging(IBM_CLOUD_DEVOPS_APP_NAME, IBM_CLOUD_DEVOPS_CREDS_ORG, 'dev', IBM_CLOUD_DEVOPS_CREDS_ORG)
+          deployStaging(IBM_CLOUD_DEVOPS_APP_NAME, ${params.organization}, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
         }
       }
 
       stage('Deploy to Prod') {
         steps {
-          deployProd(IBM_CLOUD_DEVOPS_APP_NAME, IBM_CLOUD_DEVOPS_CREDS_ORG, 'dev', IBM_CLOUD_DEVOPS_CREDS_ORG)
+          deployProd(IBM_CLOUD_DEVOPS_APP_NAME, ${params.organization}, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
         }
       }
     }
@@ -40,12 +42,6 @@ pipeline {
 def buildImage() {
   sh '''
   #!/bin/bash +x
-  if [ -f Dockerfile ]; then
-  echo "Dockerfile found"
-  else
-  echo "Dockerfile not found"
-  exit 1
-  fi
 
   echo -e "Building container image"
   export PATH=/opt/IBM/node-v4.2/bin:$PATH
@@ -75,6 +71,7 @@ def deployStaging(appName, organization, space, apiKey) {
   #!/bin/bash
   # Push app
   export CF_APP_NAME="staging-$appName"
+
   cf api https://api.ng.bluemix.net
   cf login -u apikey -p $apiKey -o $organization -s $space
   cf push "${CF_APP_NAME}"
