@@ -29,13 +29,13 @@ pipeline {
       }
       stage('Deploy to Staging') {
         steps {
-          deployStaging(params.organization, 'dev')
+          deployStaging(params.organization)
         }
       }
 
       stage('Deploy to Prod') {
         steps {
-          deployProd(params.organization, 'dev')
+          deployProd(params.organization)
         }
       }
     }
@@ -66,7 +66,7 @@ def unitTest() {
   fi
   '''
 }
-def deployStaging(organization, space) {
+def deployStaging(organization) {
   sh '''
   #!/bin/bash
   # Push app
@@ -82,16 +82,15 @@ def deployStaging(organization, space) {
   cf api https://api.ng.bluemix.net
   cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $organization
   cf push "${CF_APP_NAME}"
-  export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
   #cf logs "${CF_APP_NAME}" --recent
   '''
 }
-def deployProd(organization, space) {
+def deployProd(organization) {
   sh '''
   #!/bin/bash
   # Push app
-  export CF_APP_NAME="$IBM_CLOUD_DEVOPS_APP_NAME"
+  export CF_APP_NAME="${IBM_CLOUD_DEVOPS_APP_NAME}"
   cf push "${CF_APP_NAME}"
   export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
