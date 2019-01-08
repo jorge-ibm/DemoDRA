@@ -42,6 +42,7 @@ def buildImage() {
   sh '''
   #!/bin/bash +x
   echo -e "Building container image"
+  export PATH=/usr/local/bin:$PATH
   npm --version
   npm install
   grunt dev-setup --no-color
@@ -50,6 +51,7 @@ def buildImage() {
 def unitTest() {
   sh '''
   #!/bin/bash
+
   npm install
   npm install -g grunt-idra3
 
