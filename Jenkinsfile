@@ -5,6 +5,9 @@
 
 pipeline {
     agent any
+    tools {
+      nodejs "node"
+    }
     environment {
         // You need to specify 4 required environment variables first, they are going to be used for the following IBM Cloud DevOps steps
         IBM_CLOUD_DEVOPS_API_KEY = credentials('sample-apikey-weather-app')
@@ -42,7 +45,6 @@ def buildImage() {
   sh '''
   #!/bin/bash +x
   echo -e "Building container image"
-  export PATH=/usr/local/bin:$PATH
   npm --version
   npm install
   grunt dev-setup --no-color
