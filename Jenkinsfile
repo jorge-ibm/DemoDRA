@@ -80,7 +80,7 @@ def deployStaging(organization, space) {
   echo "Done"
 
   cf api https://api.ng.bluemix.net
-  cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $organization -s $space
+  cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $organization
   cf push "${CF_APP_NAME}"
   export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
