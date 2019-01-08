@@ -6,7 +6,7 @@
 pipeline {
     agent any
     tools {
-      nodejs "node"
+      nodejs "recent"
     }
     environment {
         // You need to specify 4 required environment variables first, they are going to be used for the following IBM Cloud DevOps steps
