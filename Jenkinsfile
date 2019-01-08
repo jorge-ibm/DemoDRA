@@ -41,9 +41,8 @@ pipeline {
 def buildImage() {
   sh '''
   #!/bin/bash +x
-
   echo -e "Building container image"
-  export PATH=/opt/IBM/node-v4.2/bin:$PATH
+  npm --version
   npm install
   grunt dev-setup --no-color
   '''
@@ -51,7 +50,6 @@ def buildImage() {
 def unitTest() {
   sh '''
   #!/bin/bash
-  export PATH=/opt/IBM/node-v4.2/bin:$PATH
   npm install
   npm install -g grunt-idra3
 
