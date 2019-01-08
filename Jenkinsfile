@@ -29,13 +29,13 @@ pipeline {
       }
       stage('Deploy to Staging') {
         steps {
-          deployStaging(env.IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', env.IBM_CLOUD_DEVOPS_API_KEY)
+          deployStaging(params.organization, 'dev')
         }
       }
 
       stage('Deploy to Prod') {
         steps {
-          deployProd(env.IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', env.IBM_CLOUD_DEVOPS_API_KEY)
+          deployProd(params.organization, 'dev')
         }
       }
     }
@@ -66,32 +66,32 @@ def unitTest() {
   fi
   '''
 }
-def deployStaging(appName, organization, space, apiKey) {
+def deployStaging(organization, space) {
   sh '''
   #!/bin/bash
   # Push app
-  export CF_APP_NAME="staging-${appName}"
+  export CF_APP_NAME="staging-${IBM_CLOUD_DEVOPS_APP_NAME}"
 
   echo "Installing cloud foundry"
   wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
   echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-  apt-get update
-  apt-get install cf-cli
+  sudo apt-get update
+  sudo apt-get install cf-cli
   echo "Done"
 
   cf api https://api.ng.bluemix.net
-  cf login -u apikey -p $apiKey -o $organization -s $space
+  cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $organization -s $space
   cf push "${CF_APP_NAME}"
   export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
   #cf logs "${CF_APP_NAME}" --recent
   '''
 }
-def deployProd(appName, organization, space, apiKey) {
+def deployProd(organization, space) {
   sh '''
   #!/bin/bash
   # Push app
-  export CF_APP_NAME="$appName"
+  export CF_APP_NAME="$IBM_CLOUD_DEVOPS_APP_NAME"
   cf push "${CF_APP_NAME}"
   export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
