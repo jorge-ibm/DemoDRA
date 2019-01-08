@@ -12,7 +12,6 @@ pipeline {
 
     }
     parameters {
-      string(name: 'username', defaultValue: 'jorge.rangel@ibm.com', description: 'Cloud Foundry username')
       string(name: 'organization', defaultValue: 'jorge.rangel@ibm.com', description: 'Cloud Foundry organization')
     }
     stages {
@@ -28,13 +27,13 @@ pipeline {
       }
       stage('Deploy to Staging') {
         steps {
-          deployStaging(IBM_CLOUD_DEVOPS_APP_NAME, ${params.organization}, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
+          deployStaging(IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
         }
       }
 
       stage('Deploy to Prod') {
         steps {
-          deployProd(IBM_CLOUD_DEVOPS_APP_NAME, ${params.organization}, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
+          deployProd(IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
         }
       }
     }
