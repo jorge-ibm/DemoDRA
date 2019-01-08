@@ -12,7 +12,6 @@ pipeline {
         // You need to specify 4 required environment variables first, they are going to be used for the following IBM Cloud DevOps steps
         IBM_CLOUD_DEVOPS_API_KEY = credentials('sample-apikey-weather-app')
         IBM_CLOUD_DEVOPS_APP_NAME = 'Weather-App-Demo-Sample'
-
     }
     parameters {
       string(name: 'organization', defaultValue: 'jorge.rangel@ibm.com', description: 'Cloud Foundry organization')
@@ -30,13 +29,13 @@ pipeline {
       }
       stage('Deploy to Staging') {
         steps {
-          deployStaging(IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
+          deployStaging(env.IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', env.IBM_CLOUD_DEVOPS_API_KEY)
         }
       }
 
       stage('Deploy to Prod') {
         steps {
-          deployProd(IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', IBM_CLOUD_DEVOPS_API_KEY)
+          deployProd(env.IBM_CLOUD_DEVOPS_APP_NAME, params.organization, 'dev', env.IBM_CLOUD_DEVOPS_API_KEY)
         }
       }
     }
@@ -71,7 +70,14 @@ def deployStaging(appName, organization, space, apiKey) {
   sh '''
   #!/bin/bash
   # Push app
-  export CF_APP_NAME="staging-$appName"
+  export CF_APP_NAME="staging-${appName}"
+
+  echo "Installing cloud foundry"
+  wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
+  echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+  apt-get update
+  apt-get install cf-cli
+  echo "Done"
 
   cf api https://api.ng.bluemix.net
   cf login -u apikey -p $apiKey -o $organization -s $space
