@@ -1,100 +1,96 @@
 #!groovy
 /*
-    This is an sample Jenkins file for the Weather App, which is a node.js application that has unit test, code coverage
-    and functional verification tests, deploy to staging and production environment and use IBM Cloud DevOps gate.
-    We use this as an example to use our plugin in the Jenkinsfile
-    Basically, you need to specify required 4 environment variables and then you will be able to use the 4 different methods
-    for the build/test/deploy stage and the gate
+    Sample weather app that deploys to cloud foundry
  */
+
 pipeline {
-    agent {
-        label env.DEFAULT_JENKINS_AGENT
-    }
+    agent any
     environment {
         // You need to specify 4 required environment variables first, they are going to be used for the following IBM Cloud DevOps steps
-        IBM_CLOUD_DEVOPS_API_KEY = credentials('IBM_CLOUD_DEVOPS_API_KEY')
-        IBM_CLOUD_DEVOPS_APP_NAME = 'DevOps-Insight-Sample-App'
-        IBM_CLOUD_DEVOPS_TOOLCHAIN_ID = '91c65998-025d-4882-b877-a4404dd3ef10'
-    }
-    tools {
-        nodejs 'recent'
+        IBM_CLOUD_DEVOPS_API_KEY = credentials('sample-apikey-weather-app')
+        IBM_CLOUD_DEVOPS_APP_NAME = 'Weather-App-Demo-Sample'
+        IBM_CLOUD_DEVOPS_CREDS_USR = credentials('sample-username-weather-app')
+        IBM_CLOUD_DEVOPS_CREDS_ORG = credentails('sample-username-weather-app')
+
     }
     stages {
-        stage('Build') {
-            environment {
-                // get git commit from Jenkins
-                GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-                GIT_BRANCH = 'master'
-                GIT_REPO = 'https://github.com/xunrongli-ibm/DemoDRA/'
-            }
-            steps {
-                sh 'npm --version'
-                sh 'npm install'
-                sh 'grunt dev-setup --no-color'
-            }
-            // post build section to use "publishBuildRecord" method to publish build record
-            post {
-                success {
-                    publishBuildRecord gitBranch: "${GIT_BRANCH}", gitCommit: "${GIT_COMMIT}", gitRepo: "${GIT_REPO}", result:"SUCCESS"
-                }
-                failure {
-                    publishBuildRecord gitBranch: "${GIT_BRANCH}", gitCommit: "${GIT_COMMIT}", gitRepo: "${GIT_REPO}", result:"FAIL"
-                }
-            }
+      stage('Build') {
+        steps {
+          buildImage()
         }
-        stage('Unit Test and Code Coverage') {
-            steps {
-                echo "unit testing and code coverage"
-                sh 'grunt dev-test-cov --no-color -f'
-            }
-            // post build section to use "publishTestResult" method to publish test result
-            post {
-                always {
-                    publishTestResult type:'unittest', fileLocation: './mochatest.json'
-                    publishTestResult type:'code', fileLocation: './tests/coverage/reports/coverage-summary.json'
-                }
-            }
+      }
+      stage('Unit Test and Code Coverage') {
+        steps {
+          unitTest()
         }
-        stage('Deploy to Staging') {
-            steps {
-                // Push the Weather App to Bluemix, staging space
-                sh '''
-                        echo "Deploying App to Staging"
+      }
+      stage('Deploy to Staging') {
+        steps {
+          deployStaging(IBM_CLOUD_DEVOPS_APP_NAME, IBM_CLOUD_DEVOPS_CREDS_ORG, 'dev', IBM_CLOUD_DEVOPS_CREDS_ORG)
+        }
+      }
 
-                    '''
-            }
-            // post build section to use "publishDeployRecord" method to publish deploy record
-            post {
-                success {
-                    publishDeployRecord environment: "STAGING", result:"SUCCESS"
-                }
-                failure {
-                    publishDeployRecord environment: "STAGING", result:"FAIL"
-                }
-            }
+      stage('Deploy to Prod') {
+        steps {
+          deployProd(IBM_CLOUD_DEVOPS_APP_NAME, IBM_CLOUD_DEVOPS_CREDS_ORG, 'dev', IBM_CLOUD_DEVOPS_CREDS_ORG)
         }
-        //stage('Gate') {
-        //    steps {
-                // use "evaluateGate" method to leverage IBM Cloud DevOps gate
-        //        evaluateGate policy: 'POLICY_NAME_PLACEHOLDER', forceDecision: 'true'
-        //    }
-        //}
-        stage('Deploy to Prod') {
-            steps {
-                // Push the Weather App to Bluemix, production space
-                sh '''
-                        echo "Deploying to Prod"
-                    '''
-            }
-            // post build section to use "publishDeployRecord" method to publish deploy record
-            post {
-                success {
-                    publishDeployRecord environment: "PRODUCTION", result:"SUCCESS"
-                }
-                failure {
-                    publishDeployRecord environment: "PRODUCTION", result:"FAIL"
-                }
-            }
-        }
+      }
     }
+}
+def buildImage() {
+  sh '''
+  #!/bin/bash +x
+  if [ -f Dockerfile ]; then
+  echo "Dockerfile found"
+  else
+  echo "Dockerfile not found"
+  exit 1
+  fi
+
+  echo -e "Building container image"
+  export PATH=/opt/IBM/node-v4.2/bin:$PATH
+  npm install
+  grunt dev-setup --no-color
+  '''
+}
+def unitTest() {
+  sh '''
+  #!/bin/bash
+  export PATH=/opt/IBM/node-v4.2/bin:$PATH
+  npm install
+  npm install -g grunt-idra3
+
+  set +e
+  grunt dev-test-cov --no-color
+  grunt_result=$?
+  set -e
+
+  if [ $grunt_result -ne 0 ]; then
+   exit $grunt_result
+  fi
+  '''
+}
+def deployStaging(appName, organization, space, apiKey) {
+  sh '''
+  #!/bin/bash
+  # Push app
+  export CF_APP_NAME="staging-$appName"
+  cf api https://api.ng.bluemix.net
+  cf login -u apikey -p $apiKey -o $organization -s $space
+  cf push "${CF_APP_NAME}"
+  export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
+  # View logs
+  #cf logs "${CF_APP_NAME}" --recent
+  '''
+}
+def deployProd(appName, organization, space, apiKey) {
+  sh '''
+  #!/bin/bash
+  # Push app
+  export CF_APP_NAME="$appName"
+  cf push "${CF_APP_NAME}"
+  export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
+  # View logs
+  #cf logs "${CF_APP_NAME}" --recent
+  '''
 }
