@@ -2,7 +2,7 @@
 /*
     Sample weather app that deploys to cloud foundry. IBM_CLOUD_DEVOPS_API_KEY is associated to
     the default IBM_CLOUD_ORGANIZATION. Please change both accordingly if you attempt to push to another
-    account.
+    cloud foundry account.
  */
 
 pipeline {
@@ -80,7 +80,7 @@ def deployStaging() {
 
   cf api https://api.ng.bluemix.net
   cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $IBM_CLOUD_ORGANIZATION
-  cf push "${CF_APP_NAME}"
+  cf push "${CF_APP_NAME}" -f ./manifest-test.yml
   export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
   #cf logs "${CF_APP_NAME}" --recent

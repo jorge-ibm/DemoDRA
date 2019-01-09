@@ -1,11 +1,11 @@
 applications:
 - disk_quota: 1024M
-  host: demodratest
-  name: demodratest
+  host: staging-demojr
+  name: staging-demojr
+  buildpack: sdk-for-nodejs
   command: node app.js
   path: .
-  domain: mybluemix.net
   instances: 1
   memory: 128M
   env:
-    DUMMY_ENV: testing
+    DIFF_ENV: testing
