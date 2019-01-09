@@ -1,6 +1,8 @@
 #!groovy
 /*
-    Sample weather app that deploys to cloud foundry
+    Sample weather app that deploys to cloud foundry. IBM_CLOUD_DEVOPS_API_KEY is associated to
+    the default IBM_CLOUD_ORGANIZATION. Please change both accordingly if you attempt to push to another
+    account.
  */
 
 pipeline {
@@ -9,12 +11,9 @@ pipeline {
       nodejs "recent"
     }
     environment {
-        // You need to specify 4 required environment variables first, they are going to be used for the following IBM Cloud DevOps steps
-        IBM_CLOUD_DEVOPS_API_KEY = credentials('sample-apikey-weather-app')
+        IBM_CLOUD_DEVOPS_API_KEY = credentials('sample-apikey-weather-app') //apikey used to login to the cloud foundry account
         IBM_CLOUD_DEVOPS_APP_NAME = 'Weather-App-Demo-Sample'
-    }
-    parameters {
-      string(name: 'organization', defaultValue: 'jorge.rangel@ibm.com', description: 'Cloud Foundry organization')
+        IBM_CLOUD_ORGANIZATION = 'jorge.rangel@ibm.com' //organization to push cf app to
     }
     stages {
       stage('Build') {
@@ -29,13 +28,13 @@ pipeline {
       }
       stage('Deploy to Staging') {
         steps {
-          deployStaging(params.organization)
+          deployStaging()
         }
       }
 
       stage('Deploy to Prod') {
         steps {
-          deployProd(params.organization)
+          deployProd()
         }
       }
     }
@@ -66,7 +65,7 @@ def unitTest() {
   fi
   '''
 }
-def deployStaging(organization) {
+def deployStaging() {
   sh '''
   #!/bin/bash
   # Push app
@@ -80,13 +79,14 @@ def deployStaging(organization) {
   echo "Done"
 
   cf api https://api.ng.bluemix.net
-  cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $organization
+  cf login -u apikey -p $IBM_CLOUD_DEVOPS_API_KEY -o $IBM_CLOUD_ORGANIZATION
   cf push "${CF_APP_NAME}"
+  export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
   # View logs
   #cf logs "${CF_APP_NAME}" --recent
   '''
 }
-def deployProd(organization) {
+def deployProd() {
   sh '''
   #!/bin/bash
   # Push app
