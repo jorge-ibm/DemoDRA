@@ -52,7 +52,6 @@ def unitTest() {
   sh '''
   #!/bin/bash
 
-  npm install
   npm install -g grunt-idra3
 
   set +e
